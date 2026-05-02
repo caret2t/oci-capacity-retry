@@ -3,7 +3,7 @@ name: OCI Capacity Retry
 on:
   repository_dispatch:
     types: [retry_oci_apply]
-  workflow_dispatch: # 手動実行用ボタンを追加
+  workflow_dispatch:
 
 jobs:
   apply:
@@ -19,7 +19,27 @@ jobs:
           api_key: ${{ secrets.OCI_KEY_FILE }}
 
       - name: Run Stack Apply
+        id: oci_apply
         run: |
-          # あなたのスタックOCIDに書き換えてください
-          STACK_ID="ocid1.ormstack.oc1.ap-tokyo-1.amaaaaaazephyayafk5jmx3yzby7ovvw2uvqfywhndilb4ypbz5f7lpthisa"
-          oci resource-manager job create-apply-job --stack-id $STACK_ID
+          STACK_ID="あなたのスタックOCID"
+          # インスタンス作成を実行
+          oci resource-manager job create-apply-job --stack-id $STACK_ID --wait-for-state SUCCEEDED
+
+      - name: Send Email on Success
+        if: success()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          # ここにメール送信設定（下記参照）
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "【祝】OCI A1インスタンスの確保に成功しました！"
+          to: ${{ secrets.MAIL_USERNAME }}
+          from: GitHub Actions OCI Bot
+          body: |
+            おめでとうございます！
+            OCIのAmpere A1インスタンスの作成に成功しました。
+            
+            スタックの実行が完了しましたので、OCIコンソールからインスタンスの状態を確認してください。
+            https://cloud.oracle.com/compute/instances
