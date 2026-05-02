@@ -1,5 +1,4 @@
 name: OCI Capacity Retry
-uses: oracle-actions/setup-oci-cli@v1.3.2
 
 on:
   repository_dispatch:
@@ -22,15 +21,17 @@ jobs:
       - name: Run Stack Apply
         id: oci_apply
         run: |
-          STACK_ID="あなたのスタックOCID"
+          STACK_ID="${{ secrets.OCI_STACK_ID }}"
           # インスタンス作成を実行
-          oci resource-manager job create-apply-job --stack-id $STACK_ID --wait-for-state SUCCEEDED
+          oci resource-manager job create-apply-job \
+            --stack-id $STACK_ID \
+            --execution-plan-strategy AUTO_APPROVED \
+            --wait-for-state SUCCEEDED
 
       - name: Send Email on Success
         if: success()
         uses: dawidd6/action-send-mail@v3
         with:
-          # ここにメール送信設定（下記参照）
           server_address: smtp.gmail.com
           server_port: 465
           username: ${{ secrets.MAIL_USERNAME }}
