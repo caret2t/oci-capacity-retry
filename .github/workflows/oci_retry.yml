@@ -1,0 +1,25 @@
+name: OCI Capacity Retry
+
+on:
+  repository_dispatch:
+    types: [retry_oci_apply]
+  workflow_dispatch: # 手動実行用ボタンを追加
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup OCI CLI
+        uses: oracle-actions/setup-oci-cli@v1
+        with:
+          user: ${{ secrets.OCI_USER_OCID }}
+          tenancy: ${{ secrets.OCI_TENANCY_OCID }}
+          fingerprint: ${{ secrets.OCI_FINGERPRINT }}
+          region: ${{ secrets.OCI_REGION }}
+          api_key: ${{ secrets.OCI_KEY_FILE }}
+
+      - name: Run Stack Apply
+        run: |
+          # あなたのスタックOCIDに書き換えてください
+          STACK_ID="ocid1.ormstack.oc1.ap-tokyo-1.amaaaaaazephyayafk5jmx3yzby7ovvw2uvqfywhndilb4ypbz5f7lpthisa"
+          oci resource-manager job create-apply-job --stack-id $STACK_ID
