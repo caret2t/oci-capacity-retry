@@ -9,38 +9,35 @@ jobs:
   apply:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup OCI CLI
+      - name: Install OCI CLI
+        run: bash -c "$(curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh)" -- --accept-all-defaults
+
+      - name: Configure OCI
         run: |
-          pip install oci-cli
           mkdir -p ~/.oci
-          echo "[DEFAULT]" > ~/.oci/config
-          echo "user=${{ secrets.OCI_USER_OCID }}" >> ~/.oci/config
-          echo "tenancy=${{ secrets.OCI_TENANCY_OCID }}" >> ~/.oci/config
-          echo "fingerprint=${{ secrets.OCI_FINGERPRINT }}" >> ~/.oci/config
-          echo "region=${{ secrets.OCI_REGION }}" >> ~/.oci/config
-          echo "key_file=~/.oci/oci_api_key.pem" >> ~/.oci/config
+          echo "[DEFAULT]
+          user=${{ secrets.OCI_USER_OCID }}
+          tenancy=${{ secrets.OCI_TENANCY_OCID }}
+          fingerprint=${{ secrets.OCI_FINGERPRINT }}
+          region=${{ secrets.OCI_REGION }}
+          key_file=~/.oci/oci_api_key.pem" > ~/.oci/config
           echo "${{ secrets.OCI_KEY_FILE }}" > ~/.oci/oci_api_key.pem
           chmod 600 ~/.oci/oci_api_key.pem
 
       - name: Run Stack Apply
         id: oci_apply
         run: |
-          STACK_ID="${{ secrets.OCI_STACK_ID }}"
-          
-          RESULT=$(oci resource-manager job create-apply-job \
-            --stack-id $STACK_ID \
+          RESULT=$(~/bin/oci resource-manager job create-apply-job \
+            --stack-id ${{ secrets.OCI_STACK_ID }} \
             --execution-plan-strategy AUTO_APPROVED \
             --query 'data.lifecycle-state' \
             --raw-output 2>&1)
-          
           echo "結果: $RESULT"
-          
           if echo "$RESULT" | grep -q "SUCCEEDED"; then
             echo "success=true" >> $GITHUB_OUTPUT
           else
             echo "success=false" >> $GITHUB_OUTPUT
           fi
-          
           exit 0
 
       - name: Send Email on Success
@@ -55,8 +52,5 @@ jobs:
           to: ${{ secrets.MAIL_USERNAME }}
           from: GitHub Actions OCI Bot
           body: |
-            おめでとうございます！
-            OCIのAmpere A1インスタンスの作成に成功しました。
-            
-            スタックの実行が完了しましたので、OCIコンソールからインスタンスの状態を確認してください。
+            おめでとうございます！A1確保成功です！
             https://cloud.oracle.com/compute/instances
