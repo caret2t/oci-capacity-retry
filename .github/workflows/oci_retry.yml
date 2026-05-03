@@ -10,13 +10,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup OCI CLI
-        uses: oracle-actions/setup-oci-cli@v1
-        with:
-          user: ${{ secrets.OCI_USER_OCID }}
-          tenancy: ${{ secrets.OCI_TENANCY_OCID }}
-          fingerprint: ${{ secrets.OCI_FINGERPRINT }}
-          region: ${{ secrets.OCI_REGION }}
-          api_key: ${{ secrets.OCI_KEY_FILE }}
+        run: |
+          pip install oci-cli
+          mkdir -p ~/.oci
+          echo "[DEFAULT]" > ~/.oci/config
+          echo "user=${{ secrets.OCI_USER_OCID }}" >> ~/.oci/config
+          echo "tenancy=${{ secrets.OCI_TENANCY_OCID }}" >> ~/.oci/config
+          echo "fingerprint=${{ secrets.OCI_FINGERPRINT }}" >> ~/.oci/config
+          echo "region=${{ secrets.OCI_REGION }}" >> ~/.oci/config
+          echo "key_file=~/.oci/oci_api_key.pem" >> ~/.oci/config
+          echo "${{ secrets.OCI_KEY_FILE }}" > ~/.oci/oci_api_key.pem
+          chmod 600 ~/.oci/oci_api_key.pem
 
       - name: Run Stack Apply
         id: oci_apply
@@ -37,7 +41,6 @@ jobs:
             echo "success=false" >> $GITHUB_OUTPUT
           fi
           
-          # 容量不足でも失敗扱いにしない
           exit 0
 
       - name: Send Email on Success
