@@ -22,14 +22,26 @@ jobs:
         id: oci_apply
         run: |
           STACK_ID="${{ secrets.OCI_STACK_ID }}"
-          # インスタンス作成を実行
-          oci resource-manager job create-apply-job \
+          
+          RESULT=$(oci resource-manager job create-apply-job \
             --stack-id $STACK_ID \
             --execution-plan-strategy AUTO_APPROVED \
-            --wait-for-state SUCCEEDED
+            --query 'data.lifecycle-state' \
+            --raw-output 2>&1)
+          
+          echo "結果: $RESULT"
+          
+          if echo "$RESULT" | grep -q "SUCCEEDED"; then
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+          fi
+          
+          # 容量不足でも失敗扱いにしない
+          exit 0
 
       - name: Send Email on Success
-        if: success()
+        if: steps.oci_apply.outputs.success == 'true'
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
